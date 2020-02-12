@@ -1,0 +1,45 @@
+temporalx:
+  api:
+    tracing: false
+    listen_address: 0.0.0.0:9090
+    listen_proto: tcp
+node:
+  listen_addresses:
+  - /ip4/0.0.0.0/tcp/4005
+  private_key: 08011240455effd42fd73ad69b482e10e227042123ae556e7a8458e81d6c841d4cc3db048830e14ecf02c26eeab8817ea7e657d3c65b3f61f7af554e0d43c156b2a3abd7
+  storage:
+    type: badger
+    path: storage
+    opts:
+      fileLoadingMode: "2"
+  peerstore:
+    type: memory
+    datastore:
+      type: leveldb
+      path: peerstore
+  keystore:
+    type: krab
+    passphrase: Swoovretag
+    datastore:
+      type: leveldb
+      path: keystore
+  replication:
+    enabled: true
+    database_location: storage/replication/db.sqlite
+    grpc_port: 9094
+    white_list_location: storage/replication/publishers
+    replication_delay: 10m
+  libp2p:
+    connection_manager:
+      enabled: true
+      low_water_mark: 100
+      high_water_mark: 300
+      grace_period: 20s
+    enabled_transports:
+      tls: true
+  opts:
+    blockstoreCaching: false
+    lowPower: true
+    namesys: true
+    pubsub: true
+log_file: ./logger.log

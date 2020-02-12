@@ -1,0 +1,9 @@
+{
+    "AWS_ACCESS_KEY_ID": "minio",
+    "AWS_SECRET_ACCESS_KEY": "minio123",
+    "WALG_S3_PREFIX": "s3://testdata",
+    "AWS_ENDPOINT": "http://127.0.0.1:9000",
+    "AWS_S3_FORCE_PATH_STYLE": "true",
+    "AWS_REGION": "us-east-1",
+    "WALG_TAR_SIZE_THRESHOLD": "1000000"
+}
