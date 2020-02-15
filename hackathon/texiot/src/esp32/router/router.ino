@@ -49,23 +49,6 @@ void handleNotFound() {
   server.send(404, "text/plain", message);
 }
 
-void handleEvent(WiFiEvent_t event) {
-  switch (event) {
-    case SYSTEM_EVENT_AP_STACONNECTED:
-      Serial.println("client connected");
-      break;
-    case SYSTEM_EVENT_AP_STADISCONNECTED:
-      Serial.println("client disconnected");
-      break;
-    case SYSTEM_EVENT_AP_STAIPASSIGNED:
-      Serial.println("assignedip to client");
-      break;
-    case SYSTEM_EVENT_AP_PROBEREQRECVED:
-      Serial.println("received probe request");
-      break;
-  }
-}
-
 void setup() {
   Serial.begin(115200);
   while (!Serial) ;
@@ -75,11 +58,6 @@ void setup() {
   //  WiFi.enableLongRange(true);
   // set tx power to max
   WiFi.setTxPower(WIFI_POWER_19_5dBm);
-  // register call back handler
-  if (!WiFi.onEvent(handleEvent)) {
-    Serial.println("failed to set event handler");
-    while (true) ;
-  }
   // configure the access point
   if (!WiFi.softAPConfig(ip, gateway, subnet)) {
     Serial.println("failed to set soft ap config");
