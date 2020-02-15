@@ -2,7 +2,12 @@
 #include "esp_http_server.h"
 #include "esp_timer.h"
 #include <WiFi.h>
-
+// Select camera model
+//#define CAMERA_MODEL_WROVER_KIT
+//#define CAMERA_MODEL_ESP_EYE
+//#define CAMERA_MODEL_M5STACK_PSRAM
+//#define CAMERA_MODEL_M5STACK_WIDE
+#define CAMERA_MODEL_AI_THINKER
 //WROVER-KIT PIN Map
 #define CAM_PIN_PWDN    -1 //power down is not used
 #define CAM_PIN_RESET   -1 //software reset will be performed
@@ -22,6 +27,104 @@
 #define CAM_PIN_HREF    23
 #define CAM_PIN_PCLK    22
 #define PART_BOUNDARY "123456789000000000000987654321"
+#if defined(CAMERA_MODEL_WROVER_KIT) 
+#define PWDN_GPIO_NUM    -1
+#define RESET_GPIO_NUM   -1
+#define XCLK_GPIO_NUM    21
+#define SIOD_GPIO_NUM    26
+#define SIOC_GPIO_NUM    27
+
+#define Y9_GPIO_NUM      35
+#define Y8_GPIO_NUM      34
+#define Y7_GPIO_NUM      39
+#define Y6_GPIO_NUM      36
+#define Y5_GPIO_NUM      19
+#define Y4_GPIO_NUM      18
+#define Y3_GPIO_NUM       5
+#define Y2_GPIO_NUM       4
+#define VSYNC_GPIO_NUM   25
+#define HREF_GPIO_NUM    23
+#define PCLK_GPIO_NUM    22
+
+#elif defined(CAMERA_MODEL_ESP_EYE)
+#define PWDN_GPIO_NUM    -1
+#define RESET_GPIO_NUM   -1
+#define XCLK_GPIO_NUM    4
+#define SIOD_GPIO_NUM    18
+#define SIOC_GPIO_NUM    23
+
+#define Y9_GPIO_NUM      36
+#define Y8_GPIO_NUM      37
+#define Y7_GPIO_NUM      38
+#define Y6_GPIO_NUM      39
+#define Y5_GPIO_NUM      35
+#define Y4_GPIO_NUM      14
+#define Y3_GPIO_NUM      13
+#define Y2_GPIO_NUM      34
+#define VSYNC_GPIO_NUM   5
+#define HREF_GPIO_NUM    27
+#define PCLK_GPIO_NUM    25
+
+#elif defined(CAMERA_MODEL_M5STACK_PSRAM)
+#define PWDN_GPIO_NUM     -1
+#define RESET_GPIO_NUM    15
+#define XCLK_GPIO_NUM     27
+#define SIOD_GPIO_NUM     25
+#define SIOC_GPIO_NUM     23
+
+#define Y9_GPIO_NUM       19
+#define Y8_GPIO_NUM       36
+#define Y7_GPIO_NUM       18
+#define Y6_GPIO_NUM       39
+#define Y5_GPIO_NUM        5
+#define Y4_GPIO_NUM       34
+#define Y3_GPIO_NUM       35
+#define Y2_GPIO_NUM       32
+#define VSYNC_GPIO_NUM    22
+#define HREF_GPIO_NUM     26
+#define PCLK_GPIO_NUM     21
+
+#elif defined(CAMERA_MODEL_M5STACK_WIDE)
+#define PWDN_GPIO_NUM     -1
+#define RESET_GPIO_NUM    15
+#define XCLK_GPIO_NUM     27
+#define SIOD_GPIO_NUM     22
+#define SIOC_GPIO_NUM     23
+
+#define Y9_GPIO_NUM       19
+#define Y8_GPIO_NUM       36
+#define Y7_GPIO_NUM       18
+#define Y6_GPIO_NUM       39
+#define Y5_GPIO_NUM        5
+#define Y4_GPIO_NUM       34
+#define Y3_GPIO_NUM       35
+#define Y2_GPIO_NUM       32
+#define VSYNC_GPIO_NUM    25
+#define HREF_GPIO_NUM     26
+#define PCLK_GPIO_NUM     21
+
+#elif defined(CAMERA_MODEL_AI_THINKER)
+#define PWDN_GPIO_NUM     32
+#define RESET_GPIO_NUM    -1
+#define XCLK_GPIO_NUM      0
+#define SIOD_GPIO_NUM     26
+#define SIOC_GPIO_NUM     27
+
+#define Y9_GPIO_NUM       35
+#define Y8_GPIO_NUM       34
+#define Y7_GPIO_NUM       39
+#define Y6_GPIO_NUM       36
+#define Y5_GPIO_NUM       21
+#define Y4_GPIO_NUM       19
+#define Y3_GPIO_NUM       18
+#define Y2_GPIO_NUM        5
+#define VSYNC_GPIO_NUM    25
+#define HREF_GPIO_NUM     23
+#define PCLK_GPIO_NUM     22
+
+#else
+#error "Camera model not selected"
+#endif
 
 static const char* _STREAM_CONTENT_TYPE = "multipart/x-mixed-replace;boundary=" PART_BOUNDARY;
 static const char* _STREAM_BOUNDARY = "\r\n--" PART_BOUNDARY "\r\n";
@@ -139,21 +242,6 @@ esp_err_t camera_init(){
         return err;
     }
 
-    return ESP_OK;
-}
-
-esp_err_t camera_capture(){
-    //acquire a frame
-    camera_fb_t * fb = esp_camera_fb_get();
-    if (!fb) {
-        ESP_LOGE(TAG, "Camera Capture Failed");
-        return ESP_FAIL;
-    }
-    //replace this with your own function
-    process_image(fb->width, fb->height, fb->format, fb->buf, fb->len);
-  
-    //return the frame buffer back to the driver for reuse
-    esp_camera_fb_return(fb);
     return ESP_OK;
 }
 
