@@ -159,9 +159,9 @@ static camera_config_t camera_config = {
     .pixel_format = PIXFORMAT_JPEG,//YUV422,GRAYSCALE,RGB565,JPEG
     .frame_size = FRAMESIZE_UXGA,//QQVGA-QXGA Do not use sizes above QVGA when not JPEG
 
-    .jpeg_quality = 0, //0-63 lower number means higher quality
+    .jpeg_quality = 63, //0-63 lower number means higher quality
     // if this causes problems, drop it down to 1
-    .fb_count = 2 //if more than one, i2s runs in continuous mode. Use only with JPEG
+    .fb_count = 1 //if more than one, i2s runs in continuous mode. Use only with JPEG
 };
 
 esp_err_t jpg_stream_httpd_handler(httpd_req_t *req){
