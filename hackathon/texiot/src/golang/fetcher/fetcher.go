@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -15,6 +16,13 @@ const partBoundary = "123456789000000000000987654321"
 
 const boundary = "\r\n--" + partBoundary + "\r\n"
 
+var (
+	host = flag.String("host", "192.168.0.2:80", "the host to connect to")
+)
+
+func init() {
+	flag.Parse()
+}
 func main() {
 	tr := http.DefaultTransport
 
@@ -27,7 +35,7 @@ func main() {
 		Method: "GET",
 		URL: &url.URL{
 			Scheme: "http",
-			Host:   "localhost:9094",
+			Host:   *host,
 			Path:   "/",
 		},
 		ProtoMajor:    1,
