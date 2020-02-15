@@ -12,21 +12,15 @@
 
 #include "IPAddress.h"
 #include "painlessMesh.h"
-
-#ifdef ESP8266
-#include "Hash.h"
-#include <ESPAsyncTCP.h>
-#else
 #include <AsyncTCP.h>
-#endif
 #include <ESPAsyncWebServer.h>
 
 #define   MESH_PREFIX     "whateverYouLike"
 #define   MESH_PASSWORD   "somethingSneaky"
 #define   MESH_PORT       5555
 
-#define   STATION_SSID     "mySSID"
-#define   STATION_PASSWORD "myPASSWORD"
+#define   STATION_SSID     "temporalxisbest"
+#define   STATION_PASSWORD "temporalxisbest123"
 
 #define HOSTNAME "HTTP_BRIDGE"
 
