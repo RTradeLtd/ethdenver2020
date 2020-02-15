@@ -13,38 +13,41 @@
 #define   STATION_SSID     "temporalxisbest"
 #define   STATION_PASSWORD "temporalxisbest123"
 #define   STATION_PORT     5555
-uint8_t   station_ip[4] =  {192,168,0,1}; // IP of the server
+
+IPAddress myIP;
 
 // prototypes
 void receivedCallback( uint32_t from, String &msg );
-
 painlessMesh  mesh;
 
 void setup() {
   Serial.begin(115200);
   mesh.setDebugMsgTypes( ERROR | STARTUP | CONNECTION );  // set before init() so that you can see startup messages
-
-
   // Channel set to 6. Make sure to use the same channel for your mesh and for you other
   // network (STATION_SSID)
   mesh.init( MESH_PREFIX, MESH_PASSWORD, MESH_PORT, WIFI_AP_STA, 6 );
-  // Setup over the air update support
-  mesh.initOTAReceive("bridge");
-
-  mesh.stationManual(STATION_SSID, STATION_PASSWORD, STATION_PORT, station_ip);
+  // providing no station IP connects to the gateway
+  mesh.stationManual(STATION_SSID, STATION_PASSWORD, STATION_PORT);
   // Bridge node, should (in most cases) be a root node. See [the wiki](https://gitlab.com/painlessMesh/painlessMesh/wikis/Possible-challenges-in-mesh-formation) for some background
   mesh.setRoot(true);
   // This node and all other nodes should ideally know the mesh contains a root, so call this on all nodes
   mesh.setContainsRoot(true);
-
-
+  // set receive message callback
   mesh.onReceive(&receivedCallback);
 }
 
 void loop() {
   mesh.update();
+  if (myIP != getLocalIP()) {
+      myIP = getLocalIP();
+      Serial.println("myip is: " myIP.toString())
+  }
 }
 
 void receivedCallback( uint32_t from, String &msg ) {
   Serial.printf("bridge: Received from %u msg=%s\n", from, msg.c_str());
+}
+
+IPAddress getlocalIP() {
+  return IPAddress(mesh.getStationIP());
 }

@@ -1,18 +1,19 @@
-# arduino-template
+# texiot
 
-`arduino-template` is a starter repository for arduino development. It provides a pipeline for efficiently building, testing, and deploying your arduino sketches. Additionally over the long-term I'm hoping this can be a useful resource for people like me who have lots of experience programming, but have never in their lives done embedded system programming, or used microcontrollers.
+# Architecture
 
-# Unit Testing
+## Hardware
 
-## Libraries
+* Arduino MKR1000 is a normal WiFi access point
+* 1x ESP32 acts as the esp-mesh root node, and a bridge
+  * Connects to other ESPs in a mesh
+  * Bridges normal WiFi (aka, the internet) and the mesh network
+* 1x ESP32 acts as an esp-mesh node
+* 1x ESP32-CAM acts an an esp-mesh node, and a streaming web cam
 
-* [arduinounit](https://github.com/mmurdoch/arduinounit/)
-  * Requires access to a board to deploy the coe too
-* [aunit](https://github.com/bxparks/AUnit)
-  * Combine with [UnixHostDuino](https://github.com/bxparks/UnixHostDuino) for automated testing on a local machine
+## Software
 
-# Reading
+* "Fetcher" program fetches data from the streaming web cam and:
+  * 1. Sends it over a LibP2P protocol
+  * 2. Stores an archived feed of the video on IPFS via S3
 
-## Testing
-
-* [automated unit testing (tinkerman)](https://tinkerman.cat/post/automated-unit-testing-metal)

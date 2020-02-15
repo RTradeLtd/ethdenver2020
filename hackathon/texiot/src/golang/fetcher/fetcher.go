@@ -25,7 +25,6 @@ func init() {
 }
 func main() {
 	tr := http.DefaultTransport
-
 	client := &http.Client{
 		Transport: tr,
 		Timeout:   0,

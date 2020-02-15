@@ -1,3 +1,3 @@
 # painlessMesh
 
-An implementation of esp-mesh 
+An implementation of esp-mesh. Documentation: https://painlessmesh.gitlab.io/painlessMesh/index.html
