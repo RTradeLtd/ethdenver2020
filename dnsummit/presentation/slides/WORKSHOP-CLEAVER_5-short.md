@@ -238,6 +238,7 @@ controls: false
 * If you don't want to support production workloads, <i>maybe</I>
 * Pinning negatively impacts performance at scale
   * 1TB of data pinned at 256KB chunksize = 50% performance reduction when adding/removing pins
+  * TemporalX reference counter provides consistent performance regardless of data stored
 * Memory consumption of an equally loaded go-ipfs node is 7-10x higher than TemporalX
 * TemporalX gRPC API superior than HTTP API 
   * Low-latency

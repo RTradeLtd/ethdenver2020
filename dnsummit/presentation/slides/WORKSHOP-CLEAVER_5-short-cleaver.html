@@ -899,6 +899,7 @@ pre .xml .cdata {
 <li>If you don&#39;t want to support production workloads, <i>maybe</I></li>
 <li>Pinning negatively impacts performance at scale<ul>
 <li>1TB of data pinned at 256KB chunksize = 50% performance reduction when adding/removing pins</li>
+<li>TemporalX reference counter provides consistent performance regardless of data stored</li>
 </ul>
 </li>
 <li>Memory consumption of an equally loaded go-ipfs node is 7-10x higher than TemporalX</li>
