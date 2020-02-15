@@ -15,8 +15,8 @@
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 
-#define   MESH_PREFIX     "whateverYouLike"
-#define   MESH_PASSWORD   "somethingSneaky"
+#define   MESH_PREFIX     "temporalxisbestmesh"
+#define   MESH_PASSWORD   "temporalxisbestmesh123"
 #define   MESH_PORT       5555
 
 #define   STATION_SSID     "temporalxisbest"
