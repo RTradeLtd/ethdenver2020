@@ -4,22 +4,27 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"net/url"
-	"os"
 )
 
-// taken from: https://gist.github.com/ZenGround0/af448f56882c16aaf10f39db86b4991e
+// from https://gist.github.com/ZenGround0/49e4a1aa126736f966a1dfdcb84abdae
+
+const partBoundary = "123456789000000000000987654321"
+
+const boundary = "\r\n--" + partBoundary + "\r\n"
 
 func main() {
 	tr := http.DefaultTransport
+
 	client := &http.Client{
 		Transport: tr,
 		Timeout:   0,
 	}
-	r := os.Stdin
+	// Send http request chunk encoding the multipart message
 	req := &http.Request{
-		Method: "POST",
+		Method: "GET",
 		URL: &url.URL{
 			Scheme: "http",
 			Host:   "localhost:9094",
@@ -28,22 +33,27 @@ func main() {
 		ProtoMajor:    1,
 		ProtoMinor:    1,
 		ContentLength: -1,
-		Body:          r,
 	}
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}
-	buf := make([]byte, 1024*1024) // 1mb buffer
+	defer resp.Body.Close()
+	reader := multipart.NewReader(resp.Body, boundary)
 	for {
-		n, err := resp.Body.Read(buf)
+		part, err := reader.NextPart()
+		if err != nil {
+			log.Fatal(err)
+		}
+		var buf []byte
+		n, err := part.Read(buf)
 		if err != nil && err != io.EOF {
 			log.Fatal(err)
 		}
-		if err == io.EOF {
-			log.Println("received eof from server, stream ended")
-			os.Exit(0)
+		if n == 0 {
+			log.Fatal("no data read")
 		}
-		fmt.Printf("read %v bytes", n)
+		// TODO(bonedaddy): send through libp2p
+		fmt.Println(string(buf))
 	}
 }
