@@ -340,5 +340,5 @@ void setup() {
 }
 
 void loop() {
-
+    delay(100); // 100ms sleep
 }
