@@ -72,7 +72,7 @@ void setup() {
   // enable access point + station mode
   WiFi.mode(WIFI_MODE_APSTA);
   // enable long range comms
-  WiFi.enableLongRange(true);
+  //  WiFi.enableLongRange(true);
   // set tx power to max
   WiFi.setTxPower(WIFI_POWER_19_5dBm);
   // register call back handler
