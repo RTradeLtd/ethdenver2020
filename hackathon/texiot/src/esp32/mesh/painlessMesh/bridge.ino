@@ -18,6 +18,7 @@ IPAddress myIP;
 
 // prototypes
 void receivedCallback( uint32_t from, String &msg );
+IPAddress getlocalIP();
 painlessMesh  mesh;
 
 void setup() {
@@ -38,9 +39,9 @@ void setup() {
 
 void loop() {
   mesh.update();
-  if (myIP != getLocalIP()) {
-      myIP = getLocalIP();
-      Serial.println("myip is: " myIP.toString())
+  if (myIP != getlocalIP()) {
+      myIP = getlocalIP();
+      Serial.println("myip is: " + myIP.toString());
   }
 }
 

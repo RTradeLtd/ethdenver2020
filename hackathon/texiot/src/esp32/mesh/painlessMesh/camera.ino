@@ -192,9 +192,7 @@ void startCameraServer() {
 
 void setup() {
   Serial.begin(115200);
-  mesh.setDebugMsgTypes(ERROR | STARTUP | CONNECTION);
-  mesh.init( MESH_PREFIX, MESH_PASSWORD, &userScheduler, MESH_PORT, WIFI_AP_STA, 6 );
-
+  
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
   config.ledc_timer = LEDC_TIMER_0;
