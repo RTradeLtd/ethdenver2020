@@ -1,9 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"flag"
-	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -15,6 +16,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/network"
 	host "github.com/libp2p/go-libp2p-host"
 	dopts "github.com/libp2p/go-libp2p-kad-dht/opts"
+	protocol "github.com/libp2p/go-libp2p-core/protocol"
 	routedhost "github.com/libp2p/go-libp2p/p2p/host/routed"
 
 	datastore "github.com/ipfs/go-datastore"
@@ -39,7 +41,7 @@ const boundary = "\r\n--" + partBoundary + "\r\n"
 
 var (
 	hostAddress   = flag.String("host", "192.168.0.2:80", "the host to connect to")
-	addr          = flag.String("multi.addr", "/ip4/0.0.0.0/tcp/4005", "the multiaddr for libp2p host")
+	addr          = flag.String("multi.addr", "/ip4/0.0.0.0/tcp/4006", "the multiaddr for libp2p host")
 	accessKey     = flag.String("access.key", "minio", "minio access key")
 	secretKey     = flag.String("secret.key", "minio123", "minio secret key")
 	minioEndpoint = flag.String("minio.endpoint", "0.0.0.0:9000", "minio endpoint")
@@ -52,15 +54,15 @@ func init() {
 func main() {
 	minioClient, err := minio.New(*minioEndpoint, *accessKey, *secretKey, false)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("failed to access minio endpoint ", err)
 	}
 	exists, err := minioClient.BucketExists("testbucket")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("failed to check if bucket exists ", err)
 	}
 	if !exists {
 		if err := minioClient.MakeBucket("testbucket", "us-east-1"); err != nil {
-			log.Fatal(err)
+			log.Fatal("failed to make bucket ", err)
 		}
 	}
 	if *setup {
@@ -75,16 +77,16 @@ func main() {
 	ps := pstoremem.NewPeerstore()
 	pk, _, err := crypto.GenerateKeyPair(crypto.ECDSA, 256)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("failed to generate key ", err)
 	}
 	logger := zap.NewExample()
 	maddr, err := multiaddr.NewMultiaddr(*addr)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("failed to get multiaddr ", err)
 	}
 	h, dt, err := newLibp2pHostAndDHT(ctx, logger, ds, ps, pk, []multiaddr.Multiaddr{maddr})
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("libp2p host creation failed ", err)
 	}
 	h.Close()
 	dt.Close()
@@ -103,15 +105,60 @@ func main() {
 	}
 	resp, err := client.Do(req)
 	if err != nil {
+		log.Fatal("failed to send request ", err)
+	}
+	minioClient.RemoveObject("testbucket", "videofeed")
+	_, err = minioClient.PutObject("testbucket", "videofeed", bytes.NewReader(nil), 0, minio.PutObjectOptions{})
+	if err != nil {
 		log.Fatal(err)
 	}
+	libp2pStreamData := func(stream network.Stream) {
+		defer stream.Reset()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+			obj, err := minioClient.GetObject("testbucket", "videofeed", minio.GetObjectOptions{})
+			if err != nil {
+				log.Fatal(err)
+			}
+			data, err := ioutil.ReadAll(obj)
+			if err != nil {
+				log.Fatal(err)
+			}
+			if _, err := stream.Write(data); err != nil {
+				log.Fatal(err)
+			}
+		}
+	}
+	h.SetStreamHandler(protocol.ID("texiot/videostream/0.0.1"), libp2pStreamData)
 	var buf = make([]byte, 1024*1024)
 	for {
 		n, err := resp.Body.Read(buf)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("failed to read body ", err)
 		}
-		fmt.Println(string(buf[:n]))
+		obj, err := minioClient.GetObject("testbucket", "videofeed", minio.GetObjectOptions{})
+		if err != nil {
+			continue
+		}
+		data, err := ioutil.ReadAll(obj)
+		if err != nil {
+			log.Fatal("failed to read object ", err)
+		}
+		data = append(data, buf[:n]...)
+		_, err = minioClient.PutObject(
+			"testbucket",
+			"videofeed",
+			bytes.NewReader(data),
+			int64(len(data)),
+			minio.PutObjectOptions{},
+		)
+		if err != nil {
+			log.Fatal("failed to put object ", err)
+		}
 	}
 
 }

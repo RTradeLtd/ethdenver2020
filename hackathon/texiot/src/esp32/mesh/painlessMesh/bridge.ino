@@ -15,6 +15,7 @@
 #define   STATION_PORT     5555
 
 IPAddress myIP;
+IPAddress nullAddr(0, 0, 0, 0);
 
 // prototypes
 void receivedCallback( uint32_t from, String &msg );
@@ -28,7 +29,7 @@ void setup() {
   // network (STATION_SSID)
   mesh.init( MESH_PREFIX, MESH_PASSWORD, MESH_PORT, WIFI_AP_STA, 6 );
   // providing no station IP connects to the gateway
-  mesh.stationManual(STATION_SSID, STATION_PASSWORD, STATION_PORT);
+  mesh.stationManual(STATION_SSID, STATION_PASSWORD);
   // Bridge node, should (in most cases) be a root node. See [the wiki](https://gitlab.com/painlessMesh/painlessMesh/wikis/Possible-challenges-in-mesh-formation) for some background
   mesh.setRoot(true);
   // This node and all other nodes should ideally know the mesh contains a root, so call this on all nodes
@@ -39,9 +40,10 @@ void setup() {
 
 void loop() {
   mesh.update();
-  if (myIP != getlocalIP()) {
-      myIP = getlocalIP();
-      Serial.println("myip is: " + myIP.toString());
+  IPAddress myIPTmp = getlocalIP();
+  if (myIPTmp != myIP && myIPTmp != nullAddr) {
+    myIP = myIPTmp;
+    Serial.println("myip is: " + myIP.toString());
   }
 }
 
