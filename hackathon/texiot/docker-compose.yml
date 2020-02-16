@@ -1,0 +1,15 @@
+version: '3'
+
+services:
+  temporalx:
+    image: temporalx:latest
+    network_mode: "host" # expose all
+  minio:
+    image: rtradetech/s3x-minio:latest
+    network_mode: "host" # expose all
+    command: gateway s3x --temporalx.endpoint 0.0.0.0:9090 --temporalx.insecure true
+    environment: 
+      - MINIO_ACCESS_KEY=minio
+      - MINIO_SECRET_KEY=minio123
+    depends_on:
+      - temporalx

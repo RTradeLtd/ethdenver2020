@@ -28,3 +28,7 @@ update-index:
 .PHONY: install-libs
 install-libs:
 	arduino-cli lib install ArduinoUni
+
+.PHONY: testenv
+testenv:
+	docker-compose up -d
