@@ -42,6 +42,7 @@ Links:
 * https://stackoverflow.com/questions/60168799/saving-a-continuous-stream-of-images-from-ffmpeg-image2pipe
 * https://github.com/mattn/go-mjpeg
 * https://github.com/bonedaddy/mjpeg
+* https://code.nfsmith.ca/nsmith/mjpeg
 
 Notes:
 
