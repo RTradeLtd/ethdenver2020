@@ -9,19 +9,19 @@
   * The entire video feed is stored on S3 + IPFS as a backup
 * Takes the data from S3X and streams it via a http server
 
-This submission essentially accomplishes a few different things:
+## Accomplishes
 
 * Lays the framework for a LibP2P IoT network
 * Lays the framework for streaming video realtime over LibP2P
 * Lays the framework for streaming video near-realtime over IPFS + HTTP
 
-Things I wanted to do but didnt get time to:
+## Wanted To Do But No Time
 
 * Relay the video feed over LoRa using [libp2p-lora-transport](https://github.com/RTradeLtd/libp2p-lora-transport)
 * Enable routing of traffic to/from the meshnet and the regular wifi network
 * Bridge the LibP2P network from the meshnet to the public network
 
-Files:
+## Related Source Files
 
 * `src/esp32/mesh/bridge.ino`
   * The esp-mesh bridge
@@ -35,3 +35,60 @@ Files:
     * LibP2P
     * S3 + IPFS
     * HTTP Server
+
+# Architecture
+
+## Hardware
+
+* Arduino MKR1000 is a normal WiFi access point
+* 1x ESP32 acts as the esp-mesh root node, and a bridge
+  * Connects to other ESPs in a mesh
+  * Bridges normal WiFi (aka, the internet) and the mesh network
+* 1x ESP32-CAM acts an an esp-mesh node, and a streaming web cam
+
+## Diagram
+
+```
+----------------       ------------         --------------
+| esp32-cam *1 | <---> | esp32 *2 | <-----> | MKR1000 *3 |
+----------------       ------------         --------------
+      ^                     ^
+      |                     |
+      -----------------------
+                ^
+                |
+                v           
+            -------------
+            | laptop *4 |
+            -------------
+
+
+Legend:
+
+1) ESP-MESH node
+2) ESP-MESH root node & bridge
+3) MKR1000 normal WiFi (meant to emulate another network, IoT meshnet, internet, etc..)
+4) connects to either of the ESP-MESH nodes, runs TemporalX, S3X, LibP2P streamer, HTTP streamer
+```
+
+
+# Setup
+
+* Power on MKR1000
+  * Verify serial works
+* Power on ESP-MESH root node / bridge
+  * Verify serial works
+* Power on ESP-MESH cam node
+  * Verify serial works
+* Connect laptop to meshnet
+* Start `fetcher`
+
+## Issues
+
+### esp32-cam
+
+Due to the amount of work being performed by the esp32-cam chipset which has 1 core, vs 2, and a smaller board, it overheats and crashes every 4-5 minutes requiring it be restarted. 
+
+### general
+
+due to the amount of traffic on the meshnet, sometimes the entire mesh seems to crash or hang. Generally this requires a hard restart, which means unplugging everything and setting it up from scratch. Occassionally a soft restart works (aka resetarting all the devices with the `RST` button)
