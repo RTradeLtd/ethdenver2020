@@ -1,6 +1,8 @@
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.39.0/go.mod h1:rVLT6fkc8chs9sfPtFc1SBH6em7n+ZoXaG+87tDISts=
+code.nfsmith.ca/nsmith/mjpeg v0.0.0-20180818020341-d476620a2598 h1:9FIPAxU5qRl3O+RozIUgvvaG91XmWpIWhw/oJUruHPQ=
+code.nfsmith.ca/nsmith/mjpeg v0.0.0-20180818020341-d476620a2598/go.mod h1:eh29imrmh/6ZUMziTERkWUq9u5/3aZyeIXfwA+ftJR8=
 contrib.go.opencensus.io/exporter/ocagent v0.5.0/go.mod h1:ImxhfLRpxoYiSq891pBrLVhN+qmP8BTVvdH2YLs7Gl0=
 git.apache.org/thrift.git v0.12.0/go.mod h1:fPE2ZNJGynbRyZ4dJvy6G277gSllfV2HJqblrnkyeyg=
 github.com/AndreasBriese/bbloom v0.0.0-20180913140656-343706a395b7/go.mod h1:bOvUY6CB00SOBii9/FifXqc0awNKxLFCL/+pkDPuyl8=
@@ -24,6 +26,8 @@ github.com/armon/consul-api v0.0.0-20180202201655-eb2c6b5be1b6/go.mod h1:grANhF5
 github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmVTwzkszR9V5SSuryQ31EELlFMUz1kKyl939pY=
 github.com/armon/go-metrics v0.0.0-20190430140413-ec5e00d3c878/go.mod h1:3AMJUQhVx52RsWOnlkpikZr01T/yAVN2gn0861vByNg=
 github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
+github.com/as/video v0.0.0-20190425231346-9c7205d4fb3e h1:JA6FSMY9BhL0atR0cRKRCMj7hxMw0Nis/NtgKP70hlE=
+github.com/as/video v0.0.0-20190425231346-9c7205d4fb3e/go.mod h1:ZoSPfyqBAnFD8dJev5oW0uJowLUCtxsRjRJZ2LNBLbY=
 github.com/aws/aws-sdk-go v1.20.21/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
 github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f/go.mod h1:AuiFmCCPBSrqvVMvuqFuk0qogytodnVFVSN5CeJB8Gc=
 github.com/bcicen/jstream v0.0.0-20190220045926-16c1f8af81c2/go.mod h1:RDu/qcrnpEdJC/p8tx34+YBFqqX71lB7dOX9QE+ZC4M=
@@ -381,6 +385,8 @@ github.com/mattn/go-isatty v0.0.5 h1:tHXDdz1cpzGaovsTB+TVB8q90WEokoVmfMqoVcrLUgw
 github.com/mattn/go-isatty v0.0.5/go.mod h1:Iq45c/XA43vh69/j3iqttzPXn0bhXyGjM0Hdxcsrc5s=
 github.com/mattn/go-isatty v0.0.7 h1:UvyT9uN+3r7yLEYSlJsbQGdsaB/a0DlgWP3pql6iwOc=
 github.com/mattn/go-isatty v0.0.7/go.mod h1:Iq45c/XA43vh69/j3iqttzPXn0bhXyGjM0Hdxcsrc5s=
+github.com/mattn/go-mjpeg v0.0.0-20180621123927-a9cedbfd1cd8 h1:hb2WFT1PoVyMgQSJw50lpyI7nn5mFaEFb5YNwHtHqwA=
+github.com/mattn/go-mjpeg v0.0.0-20180621123927-a9cedbfd1cd8/go.mod h1:rDjxFni8yWleK07pfsUU6KpqrsRuv6XWEfRWwjzVnrk=
 github.com/mattn/go-runewidth v0.0.4/go.mod h1:LwmH8dsx7+W8Uxz3IHJYH5QSwggIsqBzpuz5H//U1FU=
 github.com/mattn/go-runewidth v0.0.5 h1:jrGtp51JOKTWgvLFzfG6OtZOJcK2sEnzc/U+zw7TtbA=
 github.com/mattn/go-runewidth v0.0.5/go.mod h1:H031xJmbD/WCDINGzjvQ9THkh0rPKHF+m2gUSrubnMI=
