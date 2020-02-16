@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	code.nfsmith.ca/nsmith/mjpeg v0.0.0-20180818020341-d476620a2598 // indirect
-	github.com/as/video v0.0.0-20190425231346-9c7205d4fb3e // indirect
+	github.com/as/video v0.0.0-20190425231346-9c7205d4fb3e
 	github.com/ipfs/go-datastore v0.3.1
 	github.com/ipfs/go-ipns v0.0.2
 	github.com/libp2p/go-libp2p v0.5.2

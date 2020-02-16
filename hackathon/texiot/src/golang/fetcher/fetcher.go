@@ -9,14 +9,15 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"os/signal"
 	"sync"
 	"syscall"
 
 	"github.com/libp2p/go-libp2p-core/network"
+	protocol "github.com/libp2p/go-libp2p-core/protocol"
 	host "github.com/libp2p/go-libp2p-host"
 	dopts "github.com/libp2p/go-libp2p-kad-dht/opts"
-	protocol "github.com/libp2p/go-libp2p-core/protocol"
 	routedhost "github.com/libp2p/go-libp2p/p2p/host/routed"
 
 	datastore "github.com/ipfs/go-datastore"
@@ -134,6 +135,41 @@ func main() {
 		}
 	}
 	h.SetStreamHandler(protocol.ID("texiot/videostream/0.0.1"), libp2pStreamData)
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+			obj, err := minioClient.GetObject("testbucket", "videofeed", minio.GetObjectOptions{})
+			if err != nil {
+				continue
+			}
+			objData, err := ioutil.ReadAll(obj)
+			if err != nil {
+				log.Fatal(err)
+			}
+			if err := ioutil.WriteFile("videofeed.mjpeg", objData, os.FileMode(0640)); err != nil {
+				log.Fatal(err)
+			}
+			cmd := exec.Command(
+				"ffmpeg",
+				"-i",
+				"videofeed.mjpeg",
+				"-c:v",
+				"libx264",
+				"-preset",
+				"veryslow",
+				"-crf",
+				"18",
+				"output.mp4",
+			)
+			if err := cmd.Run(); err != nil {
+				log.Fatal(err)
+			}
+		}
+	}()
 	var buf = make([]byte, 1024*1024)
 	for {
 		n, err := resp.Body.Read(buf)
