@@ -37,6 +37,12 @@ Ideally we can use a live encoder to fetch the data via the libp2p protocol, enc
 * Encode
 * Serve via http
 
+Links:
+
+* https://stackoverflow.com/questions/60168799/saving-a-continuous-stream-of-images-from-ffmpeg-image2pipe
+* https://github.com/mattn/go-mjpeg
+* https://github.com/bonedaddy/mjpeg
+
 Notes:
 
 Possible `io.Copy` implementation of retrieval + encode
