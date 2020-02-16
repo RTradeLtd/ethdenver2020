@@ -1,5 +1,20 @@
 # texiot
 
+`texiot` is my submission for the ETHDenver 2020 buildathon. It is an IoT mesh network comprised of multiple ESP32 chips, including an ESP32-CAM chip which streams a webcam on the meshnet. Additionally there is a backend comprised of TemporalX, S3X, and a generalized LibP2P node. TemporalX + S3X are used to pull the mjpeg stream coming off the ESP32-CAM and does a few things:
+
+* Copies the output into a LibP2P protocol
+  * This means that any libp2p host can stream the video coming off the camera
+  * LibP2P video streaming, wat? :O
+* Copies the output into S3X
+  * The entire video feed is stored on S3 + IPFS as a backup
+* Takes the data from S3X and streams it via a http server
+
+This submission essentially accomplishes a few different things:
+
+* Lays the framework for a LibP2P IoT network
+* Lays the framework for streaming video realtime over LibP2P
+* Lays the framework for streaming video near-realtime over IPFS + HTTP
+
 # Architecture
 
 ## Hardware
