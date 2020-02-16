@@ -1,5 +1,7 @@
 # texiot
 
+### [ETHDenver 2020 Open Track Submission](https://alchemy-xdai.daostack.io/dao/0xe248a76a4a84667c859eb51b9af6dea29e52f139/crx/proposal/0x83ee53df2ffc65dc446a6fcbd8156bfc01c75481845965533e49054d1735ff06/competition/submission/0x891ca9aae2ad19c6027318293b3c3a7c9f003fb0cdeefbb0501139b5c996383a)
+
 `texiot` is my submission for the ETHDenver 2020 buildathon. It is an IoT mesh network comprised of multiple ESP32 chips, including an ESP32-CAM chip which streams a webcam on the meshnet. The meshnet is bridged to a MKR1000 board functioning as a regular WiFi network, giving the ability to route traffic from the meshnet to hosts on the regular WiFi network, although I didnt get a chance to implement the routing of traffic, however the meshnet is bridged to the regular wifi network. Additionally there is a backend comprised of TemporalX, S3X, and a generalized LibP2P node. TemporalX + S3X are used to pull the mjpeg stream coming off the ESP32-CAM and does a few things:
 
 * Copies the output into a LibP2P protocol
