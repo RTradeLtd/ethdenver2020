@@ -11,8 +11,11 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"strconv"
+	"strings"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/libp2p/go-libp2p-core/network"
 	protocol "github.com/libp2p/go-libp2p-core/protocol"
@@ -47,6 +50,7 @@ var (
 	secretKey     = flag.String("secret.key", "minio123", "minio secret key")
 	minioEndpoint = flag.String("minio.endpoint", "0.0.0.0:9000", "minio endpoint")
 	setup         = flag.Bool("setup", true, "setup the testenv then exit")
+	mux           sync.Mutex
 )
 
 func init() {
@@ -108,11 +112,14 @@ func main() {
 	if err != nil {
 		log.Fatal("failed to send request ", err)
 	}
+	// remove previous data
 	minioClient.RemoveObject("testbucket", "videofeed")
+	// create a new empty object
 	_, err = minioClient.PutObject("testbucket", "videofeed", bytes.NewReader(nil), 0, minio.PutObjectOptions{})
 	if err != nil {
 		log.Fatal(err)
 	}
+	// this streams the video feed over libp2p
 	libp2pStreamData := func(stream network.Stream) {
 		defer stream.Reset()
 		for {
@@ -134,40 +141,61 @@ func main() {
 			}
 		}
 	}
+	// register the libp2p protocol handler
 	h.SetStreamHandler(protocol.ID("texiot/videostream/0.0.1"), libp2pStreamData)
+	// launch a goroutine that will serve out mp4 video as a "stream"
 	go func() {
+		streamSrvMux := http.NewServeMux()
+		streamSrvMux.HandleFunc("/", streamHandler)
+		streamServer := http.Server{
+			Addr:    "0.0.0.0:6969",
+			Handler: streamSrvMux,
+		}
+		go func() {
+			if err := streamServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				log.Fatal(err)
+			}
+		}()
+		ticker := time.NewTicker(time.Second * 10)
 		for {
 			select {
 			case <-ctx.Done():
+				streamServer.Shutdown(ctx)
 				return
-			default:
+			case <-ticker.C:
+				goto START
 			}
-			obj, err := minioClient.GetObject("testbucket", "videofeed", minio.GetObjectOptions{})
-			if err != nil {
-				continue
-			}
-			objData, err := ioutil.ReadAll(obj)
-			if err != nil {
-				log.Fatal(err)
-			}
-			if err := ioutil.WriteFile("videofeed.mjpeg", objData, os.FileMode(0640)); err != nil {
-				log.Fatal(err)
-			}
-			cmd := exec.Command(
-				"ffmpeg",
-				"-i",
-				"videofeed.mjpeg",
-				"-c:v",
-				"libx264",
-				"-preset",
-				"veryslow",
-				"-crf",
-				"18",
-				"output.mp4",
-			)
-			if err := cmd.Run(); err != nil {
-				log.Fatal(err)
-			}
+		START:
+			func() {
+				mux.Lock()
+				defer mux.Unlock()
+				obj, err := minioClient.GetObject("testbucket", "videofeed", minio.GetObjectOptions{})
+				if err != nil {
+					continue
+				}
+				objData, err := ioutil.ReadAll(obj)
+				if err != nil {
+					log.Fatal(err)
+				}
+				if err := ioutil.WriteFile("videofeed.mjpeg", objData, os.FileMode(0640)); err != nil {
+					log.Fatal(err)
+				}
+				cmd := exec.Command(
+					"ffmpeg",
+					"-i",
+					"videofeed.mjpeg",
+					"-c:v",
+					"libx264",
+					"-preset",
+					"veryslow",
+					"-crf",
+					"18",
+					"output.mp4",
+				)
+				if err := cmd.Run(); err != nil {
+					log.Fatal(err)
+				}
+			}()
 		}
 	}()
 	var buf = make([]byte, 1024*1024)
@@ -246,8 +274,128 @@ func newLibp2pHostAndDHT(
 	return rHost, idht, nil
 }
 
-// StreamHandler is used to open a bi-directional stream.
-func streamHandler(stream network.Stream) {
-	defer stream.Reset()
+const BUFSIZE = 1024 * 8
 
+func streamHandler(w http.ResponseWriter, r *http.Request) {
+	mux.Lock()
+	defer mux.Unlock()
+	file, err := os.Open("output.mp4")
+
+	if err != nil {
+		w.WriteHeader(500)
+		return
+	}
+
+	defer file.Close()
+
+	fi, err := file.Stat()
+
+	if err != nil {
+		w.WriteHeader(500)
+		return
+	}
+
+	fileSize := int(fi.Size())
+
+	if len(r.Header.Get("Range")) == 0 {
+
+		contentLength := strconv.Itoa(fileSize)
+		contentEnd := strconv.Itoa(fileSize - 1)
+
+		w.Header().Set("Content-Type", "video/mp4")
+		w.Header().Set("Accept-Ranges", "bytes")
+		w.Header().Set("Content-Length", contentLength)
+		w.Header().Set("Content-Range", "bytes 0-"+contentEnd+"/"+contentLength)
+		w.WriteHeader(200)
+
+		buffer := make([]byte, BUFSIZE)
+
+		for {
+			n, err := file.Read(buffer)
+
+			if n == 0 {
+				break
+			}
+
+			if err != nil {
+				break
+			}
+
+			data := buffer[:n]
+			w.Write(data)
+			w.(http.Flusher).Flush()
+		}
+
+	} else {
+
+		rangeParam := strings.Split(r.Header.Get("Range"), "=")[1]
+		splitParams := strings.Split(rangeParam, "-")
+
+		// response values
+
+		contentStartValue := 0
+		contentStart := strconv.Itoa(contentStartValue)
+		contentEndValue := fileSize - 1
+		contentEnd := strconv.Itoa(contentEndValue)
+		contentSize := strconv.Itoa(fileSize)
+
+		if len(splitParams) > 0 {
+			contentStartValue, err = strconv.Atoi(splitParams[0])
+
+			if err != nil {
+				contentStartValue = 0
+			}
+
+			contentStart = strconv.Itoa(contentStartValue)
+		}
+
+		if len(splitParams) > 1 {
+			contentEndValue, err = strconv.Atoi(splitParams[1])
+
+			if err != nil {
+				contentEndValue = fileSize - 1
+			}
+
+			contentEnd = strconv.Itoa(contentEndValue)
+		}
+
+		contentLength := strconv.Itoa(contentEndValue - contentStartValue + 1)
+
+		w.Header().Set("Content-Type", "video/mp4")
+		w.Header().Set("Accept-Ranges", "bytes")
+		w.Header().Set("Content-Length", contentLength)
+		w.Header().Set("Content-Range", "bytes "+contentStart+"-"+contentEnd+"/"+contentSize)
+		w.WriteHeader(206)
+
+		buffer := make([]byte, BUFSIZE)
+
+		file.Seek(int64(contentStartValue), 0)
+
+		writeBytes := 0
+
+		for {
+			n, err := file.Read(buffer)
+
+			writeBytes += n
+
+			if n == 0 {
+				break
+			}
+
+			if err != nil {
+				break
+			}
+
+			if writeBytes >= contentEndValue {
+				data := buffer[:BUFSIZE-writeBytes+contentEndValue+1]
+				w.Write(data)
+				w.(http.Flusher).Flush()
+				break
+			}
+
+			data := buffer[:n]
+			w.Write(data)
+			w.(http.Flusher).Flush()
+		}
+	}
 }
