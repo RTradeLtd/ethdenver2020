@@ -23,13 +23,13 @@ Things I wanted to do but didnt get time to:
 
 Files:
 
-* `esp32/mesh/bridge.ino`
+* `src/esp32/mesh/bridge.ino`
   * The esp-mesh bridge
-* `esp32/mesh/camera.ino`
+* `src/esp32/mesh/camera.ino`
   * The esp-mesh esp32-cam node
-* `mkr1000/router.ino`
+* `src/mkr1000/router.ino`
   * The MKR1000 wifi router, acting as the "normal" network
-* `golang/fetcher.go`
+* `src/golang/fetcher.go`
   * The backend service
   * Reads data from the esp32-cam node and feeds into:
     * LibP2P
