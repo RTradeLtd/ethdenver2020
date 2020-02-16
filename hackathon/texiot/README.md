@@ -43,6 +43,9 @@ Links:
 * https://github.com/mattn/go-mjpeg
 * https://github.com/bonedaddy/mjpeg
 * https://code.nfsmith.ca/nsmith/mjpeg
+* https://github.com/gen2brain/cam2ip
+* https://github.com/as/video
+* https://github.com/panzerdev/mjpeg-stitcher
 
 Notes:
 
