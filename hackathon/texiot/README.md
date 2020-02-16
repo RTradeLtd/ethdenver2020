@@ -28,3 +28,50 @@ $> ffmpeg -i videofeed.mjpeg -c:v libx264 -preset veryslow -crf 18 output.mp4
 ```
 
 Ideally we can use a live encoder to fetch the data via the libp2p protocol, encode to mp4 live and display.
+
+# Ideas
+
+## Stream Encoder
+
+* Retrieve data from libp2p
+* Encode
+* Serve via http
+
+Notes:
+
+Possible `io.Copy` implementation of retrieval + encode
+
+```Go
+// from https://stackoverflow.com/questions/43601846/golang-and-ffmpeg-realtime-streaming-input-output
+
+var buf bytes.Buffer
+
+n, err := io.Copy(&buf, stdout)
+verificaErro(err)
+fmt.Printf("Copied %d bytes\n", n)
+
+err = cmd.Wait()
+fmt.Printf("Wait error %v\n", err)
+
+//do something with the data
+data := buf.Bytes()
+f, err4 := os.OpenFile(dir+"/out.raw", os.O_RDWR|os.O_APPEND, 0666)
+verificaErro(err4)
+defer f.Close()
+nw, err := f.Write(data)
+f.Sync()
+fmt.Printf("Write size %d bytes\n", nw)
+```
+
+Using [`thumbnailer`](https://github.com/bakape/thumbnailer)
+
+```Go
+// from https://stackoverflow.com/questions/49800771/piping-raw-byte-video-to-ffmpeg-go
+thumbnailDimensions := thumbnailer.Dims{Width: 320, Height: 130}
+
+thumbnailOptions := thumbnailer.Options{JPEGQuality:100, MaxSourceDims:thumbnailer.Dims{}, ThumbDims:thumbnailDimensions, AcceptedMimeTypes: nil}
+
+sourceData, thumbnail, err := thumbnailer.ProcessBuffer(videoData, thumbnailOptions)
+
+imageBytes := thumbnail.Image.Data
+```
