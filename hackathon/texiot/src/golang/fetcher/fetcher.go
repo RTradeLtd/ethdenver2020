@@ -14,9 +14,9 @@ import (
 	"syscall"
 
 	"github.com/libp2p/go-libp2p-core/network"
+	protocol "github.com/libp2p/go-libp2p-core/protocol"
 	host "github.com/libp2p/go-libp2p-host"
 	dopts "github.com/libp2p/go-libp2p-kad-dht/opts"
-	protocol "github.com/libp2p/go-libp2p-core/protocol"
 	routedhost "github.com/libp2p/go-libp2p/p2p/host/routed"
 
 	datastore "github.com/ipfs/go-datastore"
@@ -134,12 +134,36 @@ func main() {
 		}
 	}
 	h.SetStreamHandler(protocol.ID("texiot/videostream/0.0.1"), libp2pStreamData)
+	mux := &sync.Mutex{}
 	var buf = make([]byte, 1024*1024)
+	buffer := bytes.NewBuffer(nil)
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+			n, err := resp.Body.Read(buf)
+			if err != nil {
+				log.Fatal(err)
+			}
+			mux.Lock()
+			_, err = buffer.Write(buf[:n])
+			if err != nil {
+				log.Fatal(err)
+			}
+			mux.Unlock()
+		}
+	}()
 	for {
-		n, err := resp.Body.Read(buf)
+		mux.Lock()
+		var buf = make([]byte, buffer.Len())
+		n, err := buffer.Read(buf)
 		if err != nil {
 			log.Fatal("failed to read body ", err)
 		}
+		mux.Unlock()
 		obj, err := minioClient.GetObject("testbucket", "videofeed", minio.GetObjectOptions{})
 		if err != nil {
 			continue
