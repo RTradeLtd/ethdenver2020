@@ -1,9 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"flag"
+	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"sync"
@@ -49,20 +54,70 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
-	/*
-			look into
-			-s WxH -f mjpeg
-		https://superuser.com/questions/685022/how-can-i-pipe-data-losslessly-to-and-from-ffmpeg
-	*/
-	defer obj.Close()
-	stats, err := obj.Stat()
+
+	cmd := exec.Command(
+		"ffmpeg",
+		"-i",
+		"pipe:0",
+		"-c:v",
+		"libx264",
+		"-preset",
+		"veryslow",
+		"-crf",
+		"18",
+		//"-s",
+		//"WxH",
+		"-f",
+		"mjpeg",
+		"pipe:1",
+	)
+	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		w.WriteHeader(500)
 		w.Write([]byte(err.Error()))
 		return
 	}
-	fileSize := int(stats.Size)
+	/*
+			look into
+			-s WxH -f mjpeg
+		https://superuser.com/questions/685022/how-can-i-pipe-data-losslessly-to-and-from-ffmpeg
+	*/
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		w.WriteHeader(500)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	cmd.Stderr = os.Stderr
+	if err := cmd.Start(); err != nil {
+		w.WriteHeader(500)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	go io.Copy(stdin, obj)
+	buffer := bytes.NewBuffer(nil)
+	_, err = io.Copy(buffer, stdout)
+	if err != nil {
+		w.WriteHeader(500)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	if err := cmd.Wait(); err != nil {
+		w.WriteHeader(500)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	obj.Close()
 
+	var buf = make([]byte, buffer.Len())
+	n, err := buffer.Read(buf)
+	if err != nil {
+		w.WriteHeader(500)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	fileSize := int(len(buf[:n]))
+	reader := bytes.NewReader(buf[:n])
 	if len(r.Header.Get("Range")) == 0 {
 
 		contentLength := strconv.Itoa(fileSize)
@@ -77,7 +132,7 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
 		buffer := make([]byte, BUFSIZE)
 
 		for {
-			n, err := obj.Read(buffer)
+			n, err := reader.Read(buffer)
 
 			if n == 0 {
 				break
@@ -140,7 +195,7 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
 		writeBytes := 0
 
 		for {
-			n, err := obj.Read(buffer)
+			n, err := reader.Read(buffer)
 
 			writeBytes += n
 
@@ -164,4 +219,49 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
 			w.(http.Flusher).Flush()
 		}
 	}
+}
+
+func stdinfill(stdin io.WriteCloser) {
+	fi, err := ioutil.ReadFile("music.ogg")
+	if err != nil {
+		log.Fatal(err)
+	}
+	io.Copy(stdin, bytes.NewReader(fi))
+}
+
+func runcommand() {
+
+	cmd := exec.Command("ffmpeg", "-i", "pipe:0", "-f", "mp3", "pipe:1")
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	cmd.Stderr = os.Stderr
+
+	err = cmd.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	stdinfill(stdin)
+
+	fo, err := os.Create("output.mp3")
+	if err != nil {
+		log.Fatal(err)
+	}
+	io.Copy(fo, stdout)
+
+	defer fo.Close()
+
+	err = cmd.Wait()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }
