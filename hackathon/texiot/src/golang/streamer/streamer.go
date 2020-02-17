@@ -51,6 +51,8 @@ func main() {
 }
 
 func streamHandler(w http.ResponseWriter, r *http.Request) {
+	mux.Lock()
+	defer mux.Unlock()
 	os.Remove("videofeed.mjpeg")
 	os.Remove("output.mp4")
 	obj, err := mc.GetObject("testbucket", "videofeed", minio.GetObjectOptions{})
