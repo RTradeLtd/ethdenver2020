@@ -1,10 +1,7 @@
 package main
 
 import (
-	"bytes"
 	"flag"
-	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -54,6 +51,8 @@ func main() {
 }
 
 func streamHandler(w http.ResponseWriter, r *http.Request) {
+	os.Remove("videofeed.mjpeg")
+	os.Remove("output.mp4")
 	obj, err := mc.GetObject("testbucket", "videofeed", minio.GetObjectOptions{})
 	if err != nil {
 		w.WriteHeader(500)
@@ -61,8 +60,7 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	objBytes, err := ioutil.ReadAll(obj)
-	obj.Close()
-	if err != nil {
+	if err := ioutil.WriteFile("videofeed.mjpeg", objBytes, os.FileMode(0640)); err != nil {
 		w.WriteHeader(500)
 		w.Write([]byte(err.Error()))
 		return
@@ -70,65 +68,103 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
 	cmd := exec.Command(
 		"ffmpeg",
 		"-i",
-		"pipe:0",
+		"videofeed.mjpeg",
 		"-c:v",
 		"libx264",
 		"-preset",
 		"veryslow",
 		"-crf",
 		"18",
-		//"-s",
-		//"WxH",
-		"-f",
-		"mjpeg",
-		"pipe:1",
+		"output.mp4",
 	)
-	stdin, err := cmd.StdinPipe()
-	if err != nil {
+	if err := cmd.Run(); err != nil {
 		w.WriteHeader(500)
 		w.Write([]byte(err.Error()))
 		return
 	}
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		w.WriteHeader(500)
-		w.Write([]byte(err.Error()))
-		return
-	}
-	cmd.Stderr = os.Stderr
-	if err := cmd.Start(); err != nil {
-		w.WriteHeader(500)
-		w.Write([]byte(err.Error()))
-		return
-	}
-	go func() {
-		io.Copy(stdin, bytes.NewReader(objBytes))
-		stdin.Close()
-		fmt.Println("closed stdin")
-	}()
-	var buff bytes.Buffer
-	go func() {
-		io.Copy(&buff, stdout)
-		stdout.Close()
-		//fmt.Println("closed stdout")
-	}()
-	fmt.Println("waiting")
-	if err := cmd.Wait(); err != nil {
-		w.WriteHeader(500)
-		w.Write([]byte(err.Error()))
-		return
-	}
-	fmt.Println("finished")
+	/*
+		obj.Close()
+		if err != nil {
+			w.WriteHeader(500)
+			w.Write([]byte(err.Error()))
+			return
+		}
+		cmd := exec.Command(
+			"ffmpeg",
+			"-i",
+			"pipe:0",
+			"-c:v",
+			"libx264",
+			"-preset",
+			"veryslow",
+			"-crf",
+			"18",
+			//"-s",
+			//"WxH",
+			"-f",
+			"mjpeg",
+			"pipe:1",
+		)
+		stdin, err := cmd.StdinPipe()
+		if err != nil {
+			w.WriteHeader(500)
+			w.Write([]byte(err.Error()))
+			return
+		}
+		stdout, err := cmd.StdoutPipe()
+		if err != nil {
+			w.WriteHeader(500)
+			w.Write([]byte(err.Error()))
+			return
+		}
+		cmd.Stderr = os.Stderr
+		if err := cmd.Start(); err != nil {
+			w.WriteHeader(500)
+			w.Write([]byte(err.Error()))
+			return
+		}
+		go func() {
+			io.Copy(stdin, bytes.NewReader(objBytes))
+			stdin.Close()
+			fmt.Println("closed stdin")
+		}()
+		var buff bytes.Buffer
 
-	var buf = make([]byte, buff.Len())
-	n, err := buff.Read(buf)
+		go func() {
+			io.Copy(&buff, stdout)
+			stdout.Close()
+			//fmt.Println("closed stdout")
+		}()
+		fmt.Println("waiting")
+		if err := cmd.Wait(); err != nil {
+			w.WriteHeader(500)
+			w.Write([]byte(err.Error()))
+			return
+		}
+		fmt.Println("finished")
+		w.Header().Set("Content-Type", "video/mp4")
+		w.Header().Set("Accept-Ranges", "bytes")
+		http.ServeContent(w, r, "videofeed", time.Now(), bytes.NewReader(buff.Bytes()))
+		return
+	*/
+	file, err := os.Open("output.mp4")
+
 	if err != nil {
 		w.WriteHeader(500)
-		w.Write([]byte(err.Error()))
 		return
 	}
-	reader := bytes.NewReader(buf[:n])
-	fileSize := int(reader.Size())
+
+	defer file.Close()
+
+	fi, err := file.Stat()
+
+	if err != nil {
+		w.WriteHeader(500)
+		return
+	}
+
+	fileSize := int(fi.Size())
+
 	if len(r.Header.Get("Range")) == 0 {
 
 		contentLength := strconv.Itoa(fileSize)
@@ -136,14 +172,14 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Content-Type", "video/mp4")
 		w.Header().Set("Accept-Ranges", "bytes")
-		//w.Header().Set("Content-Length", contentLength)
+		w.Header().Set("Content-Length", contentLength)
 		w.Header().Set("Content-Range", "bytes 0-"+contentEnd+"/"+contentLength)
 		w.WriteHeader(200)
 
 		buffer := make([]byte, BUFSIZE)
 
 		for {
-			n, err := reader.Read(buffer)
+			n, err := file.Read(buffer)
 
 			if n == 0 {
 				break
@@ -191,22 +227,22 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
 			contentEnd = strconv.Itoa(contentEndValue)
 		}
 
-		//gcontentLength := strconv.Itoa(contentEndValue - contentStartValue)
+		contentLength := strconv.Itoa(contentEndValue - contentStartValue + 1)
 
 		w.Header().Set("Content-Type", "video/mp4")
 		w.Header().Set("Accept-Ranges", "bytes")
-		//w.Header().Set("Content-Length", contentLength)
+		w.Header().Set("Content-Length", contentLength)
 		w.Header().Set("Content-Range", "bytes "+contentStart+"-"+contentEnd+"/"+contentSize)
 		w.WriteHeader(206)
 
 		buffer := make([]byte, BUFSIZE)
 
-		reader.Seek(int64(contentStartValue), 0)
+		file.Seek(int64(contentStartValue), 0)
 
 		writeBytes := 0
 
 		for {
-			n, err := reader.Read(buffer)
+			n, err := file.Read(buffer)
 
 			writeBytes += n
 
