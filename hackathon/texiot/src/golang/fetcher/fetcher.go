@@ -51,6 +51,7 @@ var (
 	minioEndpoint = flag.String("minio.endpoint", "0.0.0.0:9000", "minio endpoint")
 	setup         = flag.Bool("setup", true, "setup the testenv then exit")
 	mux           sync.Mutex
+	mc            *minio.Client
 )
 
 func init() {
@@ -61,6 +62,7 @@ func main() {
 	if err != nil {
 		log.Fatal("failed to access minio endpoint ", err)
 	}
+	mc = minioClient
 	exists, err := minioClient.BucketExists("testbucket")
 	if err != nil {
 		log.Fatal("failed to check if bucket exists ", err)
@@ -171,7 +173,7 @@ func main() {
 				defer mux.Unlock()
 				obj, err := minioClient.GetObject("testbucket", "videofeed", minio.GetObjectOptions{})
 				if err != nil {
-					continue
+					return
 				}
 				objData, err := ioutil.ReadAll(obj)
 				if err != nil {
@@ -277,25 +279,19 @@ func newLibp2pHostAndDHT(
 const BUFSIZE = 1024 * 8
 
 func streamHandler(w http.ResponseWriter, r *http.Request) {
-	mux.Lock()
-	defer mux.Unlock()
-	file, err := os.Open("output.mp4")
-
+	obj, err := mc.GetObject("testbucket", "videofeed", minio.GetObjectOptions{})
 	if err != nil {
 		w.WriteHeader(500)
+		w.Write([]byte(err.Error()))
 		return
 	}
-
-	defer file.Close()
-
-	fi, err := file.Stat()
-
+	stats, err := obj.Stat()
 	if err != nil {
 		w.WriteHeader(500)
+		w.Write([]byte(err.Error()))
 		return
 	}
-
-	fileSize := int(fi.Size())
+	fileSize := int(stats.Size)
 
 	if len(r.Header.Get("Range")) == 0 {
 
@@ -311,7 +307,7 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
 		buffer := make([]byte, BUFSIZE)
 
 		for {
-			n, err := file.Read(buffer)
+			n, err := obj.Read(buffer)
 
 			if n == 0 {
 				break
@@ -369,12 +365,12 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
 
 		buffer := make([]byte, BUFSIZE)
 
-		file.Seek(int64(contentStartValue), 0)
+		obj.Seek(int64(contentStartValue), 0)
 
 		writeBytes := 0
 
 		for {
-			n, err := file.Read(buffer)
+			n, err := obj.Read(buffer)
 
 			writeBytes += n
 
