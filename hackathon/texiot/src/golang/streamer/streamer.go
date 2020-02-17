@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"flag"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -96,17 +97,14 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	go io.Copy(stdin, obj)
 	buffer := bytes.NewBuffer(nil)
-	_, err = io.Copy(buffer, stdout)
-	if err != nil {
-		w.WriteHeader(500)
-		w.Write([]byte(err.Error()))
-		return
-	}
+	go io.Copy(buffer, stdout)
+	fmt.Println("waiting")
 	if err := cmd.Wait(); err != nil {
 		w.WriteHeader(500)
 		w.Write([]byte(err.Error()))
 		return
 	}
+	fmt.Println("finished")
 	obj.Close()
 
 	var buf = make([]byte, buffer.Len())
