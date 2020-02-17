@@ -96,37 +96,36 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
-	var doneChanIn = make(chan bool, 1)
 	var doneChanOut = make(chan bool, 1)
 	go func() {
 		io.Copy(stdin, bytes.NewReader(objBytes))
-		doneChanIn <- true
+		stdin.Close()
+		fmt.Println("closed stdin")
 	}()
-	var buffer bytes.Buffer
+	var buff bytes.Buffer
 	go func() {
-		io.Copy(&buffer, stdout)
+		io.Copy(&buff, stdout)
 		doneChanOut <- true
+		stdout.Close()
 	}()
-	<-doneChanIn
 	<-doneChanOut
-	stdin.Close()
+	fmt.Println("waiting")
 	if err := cmd.Wait(); err != nil {
 		w.WriteHeader(500)
 		w.Write([]byte(err.Error()))
 		return
 	}
 	fmt.Println("finished")
-	obj.Close()
 
-	var buf = make([]byte, buffer.Len())
-	n, err := buffer.Read(buf)
+	var buf = make([]byte, buff.Len())
+	n, err := buff.Read(buf)
 	if err != nil {
 		w.WriteHeader(500)
 		w.Write([]byte(err.Error()))
 		return
 	}
-	fileSize := int(len(buf[:n]))
 	reader := bytes.NewReader(buf[:n])
+	fileSize := int(reader.Size())
 	if len(r.Header.Get("Range")) == 0 {
 
 		contentLength := strconv.Itoa(fileSize)
@@ -199,7 +198,7 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
 
 		buffer := make([]byte, BUFSIZE)
 
-		obj.Seek(int64(contentStartValue), 0)
+		reader.Seek(int64(contentStartValue), 0)
 
 		writeBytes := 0
 
@@ -228,49 +227,4 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
 			w.(http.Flusher).Flush()
 		}
 	}
-}
-
-func stdinfill(stdin io.WriteCloser) {
-	fi, err := ioutil.ReadFile("music.ogg")
-	if err != nil {
-		log.Fatal(err)
-	}
-	io.Copy(stdin, bytes.NewReader(fi))
-}
-
-func runcommand() {
-
-	cmd := exec.Command("ffmpeg", "-i", "pipe:0", "-f", "mp3", "pipe:1")
-	stdin, err := cmd.StdinPipe()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	cmd.Stderr = os.Stderr
-
-	err = cmd.Start()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	stdinfill(stdin)
-
-	fo, err := os.Create("output.mp3")
-	if err != nil {
-		log.Fatal(err)
-	}
-	io.Copy(fo, stdout)
-
-	defer fo.Close()
-
-	err = cmd.Wait()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 }
