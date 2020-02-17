@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -10,8 +11,10 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/minio/minio-go"
+	"go.uber.org/atomic"
 )
 
 /*
@@ -30,6 +33,7 @@ var (
 	setup         = flag.Bool("setup", true, "setup the testenv then exit")
 	mux           sync.Mutex
 	mc            *minio.Client
+	count         = atomic.NewInt64(0)
 )
 
 func main() {
@@ -53,6 +57,7 @@ func main() {
 func streamHandler(w http.ResponseWriter, r *http.Request) {
 	mux.Lock()
 	defer mux.Unlock()
+	count.Inc()
 	os.Remove("videofeed.mjpeg")
 	os.Remove("output.mp4")
 	obj, err := mc.GetObject("testbucket", "videofeed", minio.GetObjectOptions{})
@@ -62,7 +67,8 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	objBytes, err := ioutil.ReadAll(obj)
-	if err := ioutil.WriteFile("videofeed.mjpeg", objBytes, os.FileMode(0640)); err != nil {
+	tt := fmt.Sprintf("%s-%v-%v", time.Now().String(), time.Now().Unix(), count)
+	if err := ioutil.WriteFile(tt, objBytes, os.FileMode(0640)); err != nil {
 		w.WriteHeader(500)
 		w.Write([]byte(err.Error()))
 		return
@@ -70,14 +76,14 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
 	cmd := exec.Command(
 		"ffmpeg",
 		"-i",
-		"videofeed.mjpeg",
+		tt,
 		"-c:v",
 		"libx264",
 		"-preset",
 		"veryslow",
 		"-crf",
 		"18",
-		"output.mp4",
+		tt+"output.mp4",
 	)
 	if err := cmd.Run(); err != nil {
 		w.WriteHeader(500)
@@ -149,7 +155,7 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
 		http.ServeContent(w, r, "videofeed", time.Now(), bytes.NewReader(buff.Bytes()))
 		return
 	*/
-	file, err := os.Open("output.mp4")
+	file, err := os.Open(tt + "output.mp4")
 
 	if err != nil {
 		w.WriteHeader(500)

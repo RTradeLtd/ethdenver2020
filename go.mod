@@ -19,5 +19,6 @@ require (
 	github.com/minio/minio-go v6.0.14+incompatible
 	github.com/minio/minio-go/v6 v6.0.48
 	github.com/multiformats/go-multiaddr v0.2.0
+	go.uber.org/atomic v1.5.0
 	go.uber.org/zap v1.13.0
 )
