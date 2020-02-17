@@ -84,11 +84,6 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
-	/*
-			look into
-			-s WxH -f mjpeg
-		https://superuser.com/questions/685022/how-can-i-pipe-data-losslessly-to-and-from-ffmpeg
-	*/
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		w.WriteHeader(500)
@@ -101,14 +96,19 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
-	var doneChan = make(chan bool, 1)
+	var doneChanIn = make(chan bool, 1)
+	var doneChanOut = make(chan bool, 1)
 	go func() {
 		io.Copy(stdin, bytes.NewReader(objBytes))
-		doneChan <- true
+		doneChanIn <- true
 	}()
 	var buffer bytes.Buffer
-	go io.Copy(&buffer, stdout)
-	<-doneChan
+	go func() {
+		io.Copy(&buffer, stdout)
+		doneChanOut <- true
+	}()
+	<-doneChanIn
+	<-doneChanOut
 	stdin.Close()
 	if err := cmd.Wait(); err != nil {
 		w.WriteHeader(500)
