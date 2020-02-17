@@ -55,7 +55,13 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
-
+	objBytes, err := ioutil.ReadAll(obj)
+	obj.Close()
+	if err != nil {
+		w.WriteHeader(500)
+		w.Write([]byte(err.Error()))
+		return
+	}
 	cmd := exec.Command(
 		"ffmpeg",
 		"-i",
@@ -95,10 +101,15 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
-	go io.Copy(stdin, obj)
-	buffer := bytes.NewBuffer(nil)
-	go io.Copy(buffer, stdout)
-	fmt.Println("waiting")
+	var doneChan = make(chan bool, 1)
+	go func() {
+		io.Copy(stdin, bytes.NewReader(objBytes))
+		doneChan <- true
+	}()
+	var buffer bytes.Buffer
+	go io.Copy(&buffer, stdout)
+	<-doneChan
+	stdin.Close()
 	if err := cmd.Wait(); err != nil {
 		w.WriteHeader(500)
 		w.Write([]byte(err.Error()))
