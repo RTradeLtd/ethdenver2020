@@ -17,6 +17,11 @@ import (
 	"github.com/minio/minio-go"
 )
 
+/*
+look into you know
+you could just write the video headers e.g. Content-Type
+then stream stdout over to the body writer
+*/
 const BUFSIZE = 1024 * 8
 
 var (
@@ -96,7 +101,6 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
-	var doneChanOut = make(chan bool, 1)
 	go func() {
 		io.Copy(stdin, bytes.NewReader(objBytes))
 		stdin.Close()
@@ -105,10 +109,9 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
 	var buff bytes.Buffer
 	go func() {
 		io.Copy(&buff, stdout)
-		doneChanOut <- true
 		stdout.Close()
+		//fmt.Println("closed stdout")
 	}()
-	<-doneChanOut
 	fmt.Println("waiting")
 	if err := cmd.Wait(); err != nil {
 		w.WriteHeader(500)
@@ -133,7 +136,7 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Content-Type", "video/mp4")
 		w.Header().Set("Accept-Ranges", "bytes")
-		w.Header().Set("Content-Length", contentLength)
+		//w.Header().Set("Content-Length", contentLength)
 		w.Header().Set("Content-Range", "bytes 0-"+contentEnd+"/"+contentLength)
 		w.WriteHeader(200)
 
@@ -188,11 +191,11 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
 			contentEnd = strconv.Itoa(contentEndValue)
 		}
 
-		contentLength := strconv.Itoa(contentEndValue - contentStartValue + 1)
+		//gcontentLength := strconv.Itoa(contentEndValue - contentStartValue)
 
 		w.Header().Set("Content-Type", "video/mp4")
 		w.Header().Set("Accept-Ranges", "bytes")
-		w.Header().Set("Content-Length", contentLength)
+		//w.Header().Set("Content-Length", contentLength)
 		w.Header().Set("Content-Range", "bytes "+contentStart+"-"+contentEnd+"/"+contentSize)
 		w.WriteHeader(206)
 
