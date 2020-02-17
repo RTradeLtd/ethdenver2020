@@ -49,6 +49,11 @@ func streamHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
+	/*
+			look into
+			-s WxH -f mjpeg
+		https://superuser.com/questions/685022/how-can-i-pipe-data-losslessly-to-and-from-ffmpeg
+	*/
 	defer obj.Close()
 	stats, err := obj.Stat()
 	if err != nil {
